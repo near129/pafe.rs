@@ -1,0 +1,3 @@
+[submodule "pafe-sys/libpafe"]
+	path = pafe-sys/libpafe
+	url = git@github.com:rfujita/libpafe.git
