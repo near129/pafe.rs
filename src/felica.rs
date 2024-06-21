@@ -7,14 +7,14 @@ pub struct FelicaTag {
     /// The raw pafe_sys::tag_felica](pafe_sys::tag_felica) struct
     /// returned by libpafe. Its members are exactly the same as in
     /// the C library. For more details, please consult [libpafe](https://github.com/rfujita/libpafe).
-    pub tag: pafe_sys::Felica,
+    pub tag: pafe_sys::tag_felica,
 }
 
 impl FelicaTag {
     /// Extracts just the manufacturer code from the card's IDm.
     /// The IDm is eight bytes; the manufacturer code is the first two bytes.
     pub fn manufacturer_code(&self) -> [u8; 2] {
-        [self.tag.IDm[0], self.tag.IDm[1]].clone()
+        [self.tag.IDm[0], self.tag.IDm[1]]
     }
 
     /// Extracts just the card ID from the card's IDm.

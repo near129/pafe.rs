@@ -1,3 +1,5 @@
+use std::convert::TryInto;
+
 use crate::felica::FelicaTag;
 use pafe_sys;
 
@@ -42,7 +44,7 @@ pub enum CardType {
 impl CardType {
     /// Converts a CardType variant into constants suitable for use with
     /// `pafe_sys` functions.
-    pub fn to_sys(&self) -> u16 {
+    pub fn to_sys(&self) -> u32 {
         match self {
             Self::Any => pafe_sys::FELICA_POLLING_ANY,
             Self::Edy => pafe_sys::FELICA_POLLING_EDY,
@@ -62,7 +64,7 @@ pub enum ReaderType {
 /// This can be created by calling Pasori::create().
 /// Methods on this struct will interact with the same PaSoRi reader it was created from.
 pub struct Pasori {
-    pointer: *mut pafe_sys::Pasori,
+    pointer: *mut pafe_sys::tag_pasori,
 }
 
 impl Pasori {
@@ -78,12 +80,12 @@ impl Pasori {
         unsafe {
             pasori = pafe_sys::pasori_open();
             if pasori.is_null() {
-                return None
+                return None;
             }
             result = pafe_sys::pasori_init(pasori)
         }
         if result == 1 {
-            return None
+            return None;
         }
 
         Some(Pasori { pointer: pasori })
@@ -109,14 +111,15 @@ impl Pasori {
             // According to libpafe, RFU, the third parameter, is always 0.
             // It's probably safe to just hardcode it here.
             // npasoriv does the same.
-            pointer = pafe_sys::felica_polling(self.pointer, card_type_raw, 0, timeslot.as_u8());
+            pointer =
+                pafe_sys::felica_polling(self.pointer, card_type_raw as u16, 0, timeslot.as_u8());
             if pointer.is_null() {
                 return None;
             }
             tag = FelicaTag { tag: *pointer };
         }
 
-        return Some(tag)
+        Some(tag)
     }
 
     /// Queries the reader represented by this `Pasori` for its type.
@@ -126,7 +129,7 @@ impl Pasori {
         unsafe {
             value = pafe_sys::pasori_type(self.pointer);
         }
-        match value {
+        match value.try_into().unwrap() {
             pafe_sys::PASORI_TYPE_PASORI_TYPE_S310 => Some(ReaderType::S310),
             pafe_sys::PASORI_TYPE_PASORI_TYPE_S320 => Some(ReaderType::S320),
             pafe_sys::PASORI_TYPE_PASORI_TYPE_S330 => Some(ReaderType::S330),
@@ -175,18 +178,12 @@ impl Pasori {
     }
 
     fn int_as_bool(val: i32) -> bool {
-        if val == 0 {
-            true
-        } else {
-            false
-        }
+        val == 0
     }
 }
 
 impl Drop for Pasori {
     fn drop(&mut self) {
-        unsafe {
-            pafe_sys::pasori_close(self.pointer)
-        }
+        unsafe { pafe_sys::pasori_close(self.pointer) }
     }
 }

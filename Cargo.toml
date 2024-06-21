@@ -11,6 +11,9 @@ keywords = ["smartcard"]
 license = "GPL-2.0-only"
 readme = "README.md"
 
+[features]
+vendored = ["pafe-sys/vendored"]
+
 [dependencies.pafe-sys]
 path = "pafe-sys"
 version = "0.1.0"
