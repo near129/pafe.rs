@@ -7,15 +7,24 @@ fn build(libdir_path: &PathBuf, out_dir: &PathBuf) {
     if tmp_libdir_path.exists() {
         std::fs::remove_dir_all(&tmp_libdir_path).unwrap();
     }
-    copy_dir::copy_dir(libdir_path.clone(), tmp_libdir_path.clone()).unwrap();
-    // It may not work well when cross-compiling, so there is a possibility of modification.
+    copy_dir::copy_dir(&libdir_path, &tmp_libdir_path).unwrap();
+    std::fs::copy("prepare_build.sh", out_dir.join("prepare_build.sh")).unwrap();
+    if !std::process::Command::new("./prepare_build.sh")
+        .current_dir(&out_dir)
+        .status()
+        .unwrap()
+        .success()
+    {
+        panic!("failed to run prepare_build.sh");
+    }
     if !std::process::Command::new(tmp_libdir_path.join("configure"))
-        .arg("--build")
-        .arg(env::var("HOST").unwrap())
         .arg("--host")
-        .arg(env::var("HOST").unwrap())
-        .arg("--target")
-        .arg(env::var("TARGET").unwrap())
+        .arg(format!(
+            "{}-{}-{}",
+            env::var("CARGO_CFG_TARGET_ARCH").unwrap(),
+            env::var("CARGO_CFG_TARGET_OS").unwrap(),
+            env::var("CARGO_CFG_TARGET_ENV").unwrap()
+        ))
         .arg("--prefix")
         .arg(&out_dir)
         .current_dir(&tmp_libdir_path)
